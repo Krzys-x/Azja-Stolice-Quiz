@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quiz: Stolice Azji</title>
+<style>
+  :root{
+    --bg-1:#041017;--bg-2:#071827;--accent:#4fd1c5;--muted:#9aa6b2;--danger:#ff6b6b;--success:#6ee7b7;--glass:rgba(255,255,255,0.03);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:
+    radial-gradient(1200px 600px at 10% 20%, rgba(79,209,197,0.06), transparent 8%),
+    radial-gradient(900px 400px at 90% 80%, rgba(102,126,234,0.03), transparent 8%),
+    linear-gradient(180deg,var(--bg-1),var(--bg-2));color:#e6eef6;overflow:hidden}
+  .bg-anim{position:fixed;inset:0;z-index:0;pointer-events:none;mix-blend-mode:screen;animation:bgDrift 20s linear infinite}
+  @keyframes bgDrift{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(-20px,8px,0)}100%{transform:translate3d(0,0,0)}}
+  .wrap{position:relative;z-index:2;min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px}
+  .card{width:920px;max-width:96vw;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid var(--glass);box-shadow:0 20px 60px rgba(2,6,11,0.7);border-radius:14px;padding:22px;overflow:hidden;backdrop-filter:blur(6px);position:relative}
+  .topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px}
+  .pill{background:linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));padding:8px 12px;border-radius:999px;color:var(--muted);font-size:14px;border:1px solid rgba(255,255,255,0.015)}
+  .score{font-weight:700;color:var(--accent);padding:8px 12px;border-radius:10px}
+  .main{display:flex;gap:20px;align-items:stretch}
+  .left{flex:1;min-height:240px;position:relative;overflow:visible}
+  .question-wrap{position:relative;height:240px}
+  .question{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:26px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.008));border-radius:12px;border:1px solid rgba(255,255,255,0.03);backdrop-filter:blur(4px)}
+  .country{font-size:30px;font-weight:700;margin-bottom:8px}
+  .hint{color:var(--muted);margin-bottom:14px}
+  .input-row{display:flex;align-items:center;width:100%}
+  input.capital{max-width:520px;width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.28);color:inherit;font-size:16px;outline:none;transition:box-shadow .18s,transform .12s}
+  input.capital:focus{box-shadow:0 6px 30px rgba(8,20,24,0.6);transform:translateY(-1px)}
+  .hide-caret input.capital{caret-color:transparent}
+  .small-muted{font-size:13px;color:var(--muted);margin-top:8px}
+  .right{width:300px;flex-shrink:0;transition:opacity .38s,transform .38s}
+  .right.hidden{opacity:0;transform:translateY(8px);pointer-events:none}
+  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.008));padding:16px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);backdrop-filter:blur(4px)}
+  .list-line{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed rgba(255,255,255,0.02);font-size:14px}
+  .points{font-weight:700;color:var(--success)}
+  .index{color:var(--muted)}
+  .controls{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .btn{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--accent);padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:700;transition:transform .18s,opacity .25s;opacity:0;transform:translateY(6px);pointer-events:none}
+  .btn.show{opacity:1;transform:translateY(0);pointer-events:auto}
+  .btn.secondary{color:var(--muted);border-color:rgba(255,255,255,0.02)}
+  .feedback{margin-top:14px;padding:14px;border-radius:10px;background:linear-gradient(180deg, rgba(0,0,0,0.26), rgba(0,0,0,0.18));width:100%;color:var(--muted);display:none;border:1px solid rgba(255,255,255,0.02)}
+  .feedback.show{display:block;animation:fadeInUp .26s ease both}
+  .correct{color:var(--success);font-weight:700}
+  .wrong{color:var(--danger);font-weight:700}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .slide-enter{animation:slideInFromRight .45s cubic-bezier(.22,.9,.32,1) both}
+  .slide-exit{animation:slideOutToLeft .45s cubic-bezier(.22,.9,.32,1) both}
+  @keyframes slideInFromRight{from{transform:translateX(18%) scale(.995);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+  @keyframes slideOutToLeft{from{transform:translateX(0) scale(1);opacity:1}to{transform:translateX(-18%) scale(.995);opacity:0}}
+  .btn.pulse{animation:popIn .36s cubic-bezier(.2,.9,.2,1)}
+  @keyframes popIn{0%{transform:translateY(8px) scale(.98);opacity:0}60%{transform:translateY(-6px) scale(1.02);opacity:1}100%{transform:translateY(0) scale(1)}}
+
+  /* End screen: overlay inside card; compact frame for score and percent */
+  .endscreen{
+    position: absolute;
+    inset: 0;
+    display:none;
+    padding:18px 18px 72px; /* extra bottom padding to make space for bottom actions */
+    box-sizing:border-box;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:16px;
+    border-radius:12px;
+    background: linear-gradient(180deg, rgba(4,16,23,0.6), rgba(7,24,39,0.6));
+    z-index: 10;
+    overflow: hidden;
+  }
+  .endscreen.show{display:flex}
+
+  /* score card: grouping x/y and percent */
+  .score-card{
+    display:flex;
+    gap:18px;
+    align-items:center;
+    padding:16px 20px;
+    border-radius:14px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.04);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+    min-width: 320px;
+    max-width: calc(100% - 48px);
+  }
+  .score-x{
+    font-size:34px;
+    font-weight:900;
+    color:var(--accent);
+    line-height:1;
+  }
+  .score-x small{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  .score-pct{
+    margin-left:auto;
+    background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+    padding:12px 16px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.02);
+    text-align:center;
+    min-width:92px;
+  }
+  .score-pct .num{
+    font-size:24px;
+    font-weight:900;
+    color:var(--accent);
+    display:block;
+  }
+  .score-pct .label{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:4px;
+  }
+
+  /* Buttons area anchored to bottom of card and sharper styling */
+  .endscreen-footer{
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    display:flex;
+    gap:12px;
+    justify-content:center;
+    align-items:center;
+    z-index: 12;
+  }
+
+  .replay-btn{
+    display:inline-block;
+    padding:12px 18px;
+    border-radius:6px; /* sharper: smaller radius */
+    border: none;
+    color:#eafaf7;
+    background: linear-gradient(180deg,#06a99a,#02867f);
+    cursor:pointer;
+    transition:transform .12s,box-shadow .12s;
+    min-width:200px;
+    text-align:center;
+    font-weight:800;
+    box-shadow: 0 6px 18px rgba(3,30,28,0.42);
+  }
+  .replay-btn.secondary{
+    background: linear-gradient(180deg,#22303a,#1a2730);
+    color:var(--muted);
+    border:1px solid rgba(255,255,255,0.04);
+    box-shadow: none;
+  }
+  .replay-btn:active{ transform: translateY(1px); box-shadow: 0 4px 10px rgba(3,30,28,0.36); }
+
+  .muted-small{color:var(--muted);font-size:13px;margin-top:10px}
+  .sound-toggle{margin-left:6px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--muted);cursor:pointer;font-weight:600}
+  @media(max-width:880px){
+    .card{padding:16px}
+    .right{width:100%}
+    .main{flex-direction:column}
+    .input-row{justify-content:flex-start}
+    input.capital{max-width:100%}
+    .score-card{flex-direction:column;align-items:flex-start}
+    .score-pct{margin-left:0;width:100%;text-align:left}
+    .endscreen-footer{flex-direction:column;gap:10px;left:12px;right:12px}
+  }
+</style>
+</head>
+<body>
+<div class="bg-anim" aria-hidden="true"></div>
+
+<div class="wrap">
+  <div class="card" role="application" aria-label="Quiz stolic Azji">
+    <div class="topbar">
+      <div class="progress">
+        <div class="pill"><strong id="countryIndex">1</strong> / <span id="totalCount">?</span></div>
+        <div class="pill index" id="countryNameBrief">Kraj</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="score" aria-live="polite">Punkty: <span id="score">0</span></div>
+        <button id="soundToggle" class="sound-toggle" aria-pressed="true">Dźwięk: włączony</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="left">
+        <div class="question-wrap" id="questionArea"></div>
+        <div class="feedback" id="feedbackArea" aria-live="assertive"></div>
+      </div>
+
+      <div class="right" id="infoPanel">
+        <div class="panel" role="region" aria-label="Informacje">
+          <h4>Informacje</h4>
+          <div class="list-line"><div class="muted">Aktualny kraj</div><div id="infoCountry" class="index">-</div></div>
+          <div class="list-line"><div class="muted">Numer</div><div id="infoIndex" class="index">-</div></div>
+          <div class="list-line"><div class="muted">Punkty</div><div id="infoScore" class="points">0</div></div>
+
+          <div style="height:10px"></div>
+
+          <div class="muted-small">Wpisz stolicę i naciśnij Enter, aby zatwierdzić. Jeśli odpowiedź będzie błędna, możesz kontynuować przyciskiem "Kontynuuj" lub klawiszem Enter.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="endscreen" id="endScreen" role="dialog" aria-modal="true" aria-labelledby="finalScore">
+      <div class="score-card" aria-hidden="false">
+        <div class="score-x" id="finalScore">0 / 0
+          <small>Wynik</small>
+        </div>
+        <div class="score-pct" id="finalPercentWrap">
+          <span class="num" id="finalPercent">0%</span>
+          <span class="label">Procent poprawnych</span>
+        </div>
+      </div>
+
+      <div class="muted-small" id="endNote" aria-hidden="true"></div>
+      <div class="endscreen-footer" role="group" aria-label="Opcje końcowe">
+        <button class="replay-btn" id="playAllEnd">Zagraj ponownie (wszystkie)</button>
+        <button class="replay-btn secondary" id="playWrongEnd" style="display:none">Zagraj tylko źle</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* COUNTRIES filtered to the list you provided */
+const COUNTRIES = [
+  {country:'Afganistan', capital:'Kabul'},
+  {country:'Arabia Saudyjska', capital:'Rijad'},
+  {country:'Armenia', capital:'Erywań'},
+  {country:'Azerbejdżan', capital:'Baku'},
+  {country:'Bahrajn', capital:'Manama'},
+  {country:'Bangladesz', capital:'Dhaka'},
+  {country:'Bhutan', capital:'Thimphu'},
+  {country:'Brunei', capital:'Bandar Seri Begawan'},
+  {country:'Chiny', capital:'Pekin'},
+  {country:'Filipiny', capital:'Manila'},
+  {country:'Gruzja', capital:'Tbilisi'},
+  {country:'Indie', capital:'Nowe Delhi'},
+  {country:'Indonezja', capital:'Dżakarta'},
+  {country:'Irak', capital:'Bagdad'},
+  {country:'Iran', capital:'Teheran'},
+  {country:'Izrael', capital:'Jerozolima'},
+  {country:'Japonia', capital:'Tokio'},
+  {country:'Jemen', capital:'Sana'},
+  {country:'Jordania', capital:'Amman'},
+  {country:'Kambodża', capital:'Pnom Penh'},
+  {country:'Katar', capital:'Doha'},
+  {country:'Kazachstan', capital:'Astana'},
+  {country:'Kirgistan', capital:'Biszkek'},
+  {country:'Korea Południowa', capital:'Seul'},
+  {country:'Korea Północna', capital:'Pjongjang'},
+  {country:'Kuwejt', capital:'Kuwejt'},
+  {country:'Laos', capital:'Wientian'},
+  {country:'Liban', capital:'Bejrut'},
+  {country:'Malediwy', capital:'Malé'},
+  {country:'Malezja', capital:'Kuala Lumpur'},
+  {country:'Mjanma', capital:'Naypyidaw'},
+  {country:'Mongolia', capital:'Ułan Bator'},
+  {country:'Nepal', capital:'Katmandu'},
+  {country:'Oman', capital:'Maskat'},
+  {country:'Pakistan', capital:'Islamabad'},
+  {country:'Palestyna', capital:'Wschodnia Jerozolima/Ramallah'},
+  {country:'Rosja', capital:'Moskwa'},
+  {country:'Singapur', capital:'Singapur'},
+  {country:'Sri Lanka', capital:'Sri Dźajawardanapura Kotte'},
+  {country:'Syria', capital:'Damaszek'}, 
+  {country:'Tadżykistan', capital:'Duszanbe'},
+  {country:'Tajlandia', capital:'Bangkok'},
+  {country:'Tajwan', capital:'Tajpej'},
+  {country:'Timor Wschodni', capital:'Dili'},
+  {country:'Turcja', capital:'Ankara'},
+  {country:'Turkmenistan', capital:'Aszchabad'},
+  {country:'Uzbekistan', capital:'Taszkent'},
+  {country:'Wietnam', capital:'Hanoi'},
+  {country:'Zjednoczone Emiraty Arabskie', capital:'Abu Zabi'}
+];
+
+/* Normalizacja: usuwa diakrytyki, interpunkcję, wielkie litery, zbija spacje */
+function normalize(s){
+  if(!s) return '';
+  return s.toString().trim().toLowerCase()
+    .replace(/ę/g,'e').replace(/ó/g,'o').replace(/ą/g,'a').replace(/ś/g,'s').replace(/ł/g,'l')
+    .replace(/ż/g,'z').replace(/ź/g,'z').replace(/ć/g,'c').replace(/ń/g,'n').replace(/é/g,'e')
+    .replace(/[^\w\s\-]/g,'').replace(/\s+/g,' ');
+}
+
+/* Rozbijamy warianty (jeśli były) i normalizujemy */
+function acceptableVariants(text){
+  if(!text) return [];
+  const raw = text.toString();
+  const parts = raw.split(/[/;,|]| або | or | eller | ou | eller /i).map(p=>p.trim()).filter(Boolean);
+  const normalized = parts.map(p => normalize(p));
+  return normalized;
+}
+
+/* Sprawdzenie odpowiedzi */
+function isAnswerCorrect(given, correct){
+  const g = normalize(given);
+  const c = normalize(correct);
+  if(!g) return false;
+  const variants = acceptableVariants(c);
+  for(const v of variants){
+    if(g === v) return true;
+  }
+  if(!g.includes(' ')){
+    if(g.length < 2) return false;
+    for(const v of variants){
+      if(!v.includes(' ') && g === v) return true;
+    }
+  }
+  return false;
+}
+
+
+/* Stan gry i UI */
+let pool = [...COUNTRIES];
+let total = pool.length;
+let index = 0;
+let score = 0;
+let wrongList = [];
+let current = null;
+let allowContinueWithEnter = false;
+let soundEnabled = true;
+
+const questionArea = document.getElementById('questionArea');
+const feedbackArea = document.getElementById('feedbackArea');
+const countryIndexEl = document.getElementById('countryIndex');
+const totalCountEl = document.getElementById('totalCount');
+const countryNameBrief = document.getElementById('countryNameBrief');
+const infoCountry = document.getElementById('infoCountry');
+const infoIndex = document.getElementById('infoIndex');
+const infoScore = document.getElementById('infoScore');
+const scoreEl = document.getElementById('score');
+const endScreen = document.getElementById('endScreen');
+const finalScore = document.getElementById('finalScore');
+const finalPercent = document.getElementById('finalPercent');
+
+const playAllEnd = document.getElementById('playAllEnd');
+const playWrongEnd = document.getElementById('playWrongEnd');
+const infoPanel = document.getElementById('infoPanel');
+const soundToggle = document.getElementById('soundToggle');
+
+playAllEnd.addEventListener('click', ()=>startNewRound('all'));
+playWrongEnd.addEventListener('click', ()=>startNewRound('wrong'));
+soundToggle.addEventListener('click', ()=>{
+  soundEnabled = !soundEnabled;
+  soundToggle.textContent = soundEnabled ? 'Dźwięk: włączony' : 'Dźwięk: wyłączony';
+  soundToggle.setAttribute('aria-pressed', String(soundEnabled));
+});
+
+/* WebAudio - prosty generator krótkich efektów */
+let audioCtx = null;
+function ctx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+function playTone(freq, dur=0.12, type='sine', volume=0.08, nowDelay=0){
+  if(!soundEnabled) return;
+  const a = ctx();
+  const now = a.currentTime + Math.max(0.02, nowDelay);
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, now);
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(volume, now + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  o.connect(g); g.connect(a.destination);
+  o.start(now); o.stop(now + dur + 0.02);
+}
+
+function sfxCorrect(){ playTone(880, 0.12, 'sine', 0.09); setTimeout(()=>playTone(1320,0.10,'sine',0.06,0.04),40); }
+function sfxWrong(){ playTone(220,0.16,'sawtooth',0.12); setTimeout(()=>playTone(160,0.12,'sawtooth',0.08,0.12),120); }
+function sfxNext(){ playTone(1200,0.06,'square',0.07); }
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} }
+function revealControls(showWrongOption){
+  document.getElementById('playWrongEnd').style.display = showWrongOption ? 'inline-block' : 'none';
+}
+function hideControls(){ /* footer stays visible */ }
+
+function startNewRound(mode='all'){
+  feedbackArea.classList.remove('show');
+  endScreen.classList.remove('show');
+  questionArea.innerHTML = '';
+  if(mode==='all'){ pool = [...COUNTRIES]; wrongList = []; }
+  else { if(wrongList.length===0) return; pool = wrongList.map(i=>i); wrongList = []; }
+  shuffle(pool);
+  total = pool.length; index = 0; score = 0; allowContinueWithEnter = false;
+  infoPanel.classList.remove('hidden');
+  document.querySelector('.card').classList.remove('hide-caret');
+  updateUI(); showQuestion();
+}
+function updateUI(){
+  countryIndexEl.textContent = Math.min(index+1,total);
+  totalCountEl.textContent = total;
+  countryNameBrief.textContent = pool[index]?pool[index].country:'-';
+  infoCountry.textContent = pool[index]?pool[index].country:'-';
+  infoIndex.textContent = `${index+1} / ${total}`;
+  infoScore.textContent = score;
+  scoreEl.textContent = score;
+}
+function showQuestion(){
+  allowContinueWithEnter = false;
+  const item = pool[index];
+  current = item;
+  const q = document.createElement('div');
+  q.className = 'question slide-enter';
+  q.setAttribute('data-country', item.country);
+  q.innerHTML = `
+    <div class="country">${item.country}</div>
+    <div class="hint">Podaj stolicę tego kraju</div>
+    <div class="input-row">
+      <input class="capital" id="capitalInput" placeholder="Wpisz stolicę..." autocomplete="off" autocapitalize="words" />
+    </div>
+    <div class="small-muted">Naciśnij Enter, aby zatwierdzić. Jeśli odpowiedź będzie błędna, możesz kontynuować przyciskiem "Kontynuuj" lub klawiszem Enter.</div>
+  `;
+  questionArea.innerHTML = '';
+  questionArea.appendChild(q);
+  feedbackArea.classList.remove('show');
+  updateUI();
+  const input = document.getElementById('capitalInput');
+  setTimeout(()=>input.focus(),60);
+  input.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      if(feedbackArea.classList.contains('show') && allowContinueWithEnter){ proceedAfterContinue(); }
+      else { submitAnswer(input.value); }
+    }
+  });
+}
+function submitAnswer(value){
+  const correct = current.capital;
+  const ok = isAnswerCorrect(value, correct);
+  if(ok){
+    score++; sfxCorrect(); infoScore.textContent = score; scoreEl.textContent = score; showFeedback(true, correct);
+    const card = questionArea.querySelector('.question'); if(card){ card.animate([{boxShadow:'0 0 0 0 rgba(0,0,0,0)'},{boxShadow:'0 18px 60px rgba(46,128,113,0.12)'}],{duration:420,fill:'forwards'}); }
+    setTimeout(()=>animateAndNext(),260);
+  } else {
+    wrongList.push(current); sfxWrong(); showFeedback(false, correct); addContinueButtonForWrong(); allowContinueWithEnter = true;
+    setTimeout(()=>{ const btn = feedbackArea.querySelector('button.ctrl-continue'); if(btn) btn.focus(); },80);
+  }
+}
+function showFeedback(isRight, correct){
+  feedbackArea.classList.add('show');
+  feedbackArea.innerHTML = '';
+  if(isRight){
+    feedbackArea.innerHTML = `<div class="correct">Dobrze — +1 punkt</div><div class="small-muted">Poprawna odpowiedź: <strong>${correct}</strong></div>`;
+  } else {
+    feedbackArea.innerHTML = `<div class="wrong">Błędna odpowiedź</div><div class="small-muted">Poprawna odpowiedź: <strong>${correct}</strong></div>`;
+  }
+}
+function addContinueButtonForWrong(){
+  const btn = document.createElement('button');
+  btn.className = 'btn ctrl-continue show pulse';
+  btn.textContent = 'Kontynuuj';
+  btn.style.marginTop = '12px';
+  btn.addEventListener('click', ()=> proceedAfterContinue());
+  feedbackArea.appendChild(btn);
+}
+function proceedAfterContinue(){
+  sfxNext();
+  allowContinueWithEnter = false;
+  const q = questionArea.querySelector('.question');
+  if(q){ q.classList.remove('slide-enter'); q.classList.add('slide-exit'); }
+  setTimeout(()=>{ index++; if(index >= total) finishRound(); else { updateUI(); showQuestion(); } },420);
+}
+function animateAndNext(){
+  sfxNext();
+  const q = questionArea.querySelector('.question');
+  if(q){ q.classList.remove('slide-enter'); q.classList.add('slide-exit'); }
+  setTimeout(()=>{ index++; if(index >= total) finishRound(); else { updateUI(); showQuestion(); } },420);
+}
+function finishRound(){
+  const x = score, y = total, pct = Math.round((x/y)*10000)/100;
+  finalScore.textContent = `${x} / ${y}`; finalPercent.textContent = `${pct}%`; endScreen.classList.add('show');
+  questionArea.innerHTML = ''; feedbackArea.classList.remove('show');
+  infoPanel.classList.add('hidden');
+  document.querySelector('.card').classList.add('hide-caret');
+
+  revealControls(wrongList.length > 0);
+
+  countryIndexEl.textContent = total; totalCountEl.textContent = total; countryNameBrief.textContent = 'Koniec';
+  infoCountry.textContent = '-'; infoIndex.textContent = `${total} / ${total}`; infoScore.textContent = score; scoreEl.textContent = score;
+}
+
+/* start */
+shuffle(pool);
+total = pool.length;
+document.getElementById('totalCount').textContent = total;
+updateUI();
+showQuestion();
+
+/* UX helpers */
+questionArea.addEventListener('click', ()=>{ const inp = document.getElementById('capitalInput'); if(inp) inp.focus(); });
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ const inp = document.getElementById('capitalInput'); if(inp) inp.value = ''; } });
+
+</script>
+</body>
+</html>
+```
